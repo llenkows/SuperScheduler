@@ -5,7 +5,10 @@
             "category": "Testing",
             "status": "Unfinished",
             "due_time": "11:30 PM"
-        },
+        }
+    ],
+    "2024-09-20": [],
+    "2024-09-19": [
         {
             "name": "Test2",
             "category": "Testing",

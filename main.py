@@ -131,6 +131,10 @@ class TaskWindow:
         self.top = tk.Toplevel(parent)
         self.top.title(f"Tasks for {day}/{month}/{year}")
 
+        # Increase the size of the task window
+        self.top.geometry("500x400")
+        self.top.minsize(400, 300)
+
         self.calendar_app = calendar_app
         self.year = year
         self.month = month
@@ -175,7 +179,10 @@ class TaskWindow:
         # Create a single window for task addition
         add_task_window = tk.Toplevel(self.top)
         add_task_window.title("Add Task")
-        add_task_window.geometry("400x400")  # Adjust the window size to fit all elements
+
+        # Increase the size of the add task window
+        add_task_window.geometry("500x500")
+        add_task_window.minsize(400, 400)
 
         # Task Name
         tk.Label(add_task_window, text="Task Name:").pack(pady=5)
@@ -257,7 +264,7 @@ class TaskWindow:
             self.calendar_app.tasks[self.date_key].append(new_task)
             self.calendar_app.save_tasks()
             self.load_tasks()
-            self.calendar_app.show_calendar(self.year, self.month)
+            self.calendar_app.show_calendar(self.calendar_app.current_year, self.calendar_app.current_month)
             add_task_window.destroy()
 
         confirm_button = tk.Button(add_task_window, text="Add Task", command=confirm_add_task)
@@ -274,7 +281,7 @@ class TaskWindow:
 
         edit_task_window = tk.Toplevel(self.top)
         edit_task_window.title("Edit Task")
-        edit_task_window.geometry("400x400")
+        edit_task_window.geometry("500x500")  # Increased size for better visibility
 
         # Task Name
         tk.Label(edit_task_window, text="Task Name:").pack(pady=5)
@@ -322,8 +329,15 @@ class TaskWindow:
         tk.Radiobutton(status_frame, text="Work in Progress", variable=status_var, value="Work in Progress").pack(anchor=tk.W)
         tk.Radiobutton(status_frame, text="Completed", variable=status_var, value="Completed").pack(anchor=tk.W)
 
+        # Move Task Button
+        def move_task():
+            self.open_calendar_for_move(task, task_index)
+
+        move_button = tk.Button(edit_task_window, text="Move Task", command=move_task)
+        move_button.pack(pady=10)
+
         # Confirm Button
-        def confirm_edit_task():
+        def confirm_edit_task(self):
             task_name = task_name_var.get()
             category = category_var.get()
             status = status_var.get()
@@ -353,11 +367,46 @@ class TaskWindow:
             self.calendar_app.tasks[self.date_key][task_index] = updated_task
             self.calendar_app.save_tasks()
             self.load_tasks()
-            self.calendar_app.show_calendar(self.year, self.month)
-            edit_task_window.destroy()
+            self.calendar_app.show_calendar(self.calendar_app.current_year, self.calendar_app.current_month)
+            self.close_all_windows_except_main()  # Close all windows except the main calendar window
 
         confirm_button = tk.Button(edit_task_window, text="Save Changes", command=confirm_edit_task)
         confirm_button.pack(pady=20)
+
+    def open_calendar_for_move(self, task, task_index):
+        move_window = tk.Toplevel(self.top)
+        move_window.title("Select Date to Move Task")
+        move_window.geometry("900x600")
+
+        calendar_frame = tk.Frame(move_window)
+        calendar_frame.pack(expand=True, fill=tk.BOTH)
+
+        # Show calendar for the current month
+        calendar_app = TaskCalendar(move_window)
+        calendar_app.show_calendar(self.calendar_app.current_year, self.calendar_app.current_month)
+
+        def on_date_select(year, month, day):
+            destination_date_key = f"{year}-{month:02d}-{day:02d}"
+            if messagebox.askyesno("Confirm Move", f"Are you sure you want to move this task to {day}/{month}/{year}?"):
+                if destination_date_key not in self.calendar_app.tasks:
+                    self.calendar_app.tasks[destination_date_key] = []
+                self.calendar_app.tasks[destination_date_key].append(task)
+                del self.calendar_app.tasks[self.date_key][task_index]
+                self.calendar_app.save_tasks()
+                self.load_tasks()
+                self.calendar_app.show_calendar(self.calendar_app.current_year, self.calendar_app.current_month)
+                move_window.destroy()  # Ensure move window is closed
+                self.close_all_windows_except_main()  # Ensure all other windows are closed
+
+        # Add functionality to the calendar buttons to move the task
+        calendar_app.open_task_window = lambda y, m, d: on_date_select(y, m, d)
+
+    def close_all_windows_except_main(self):
+        # Close all Toplevel windows except the main task calendar window
+        for window in self.top.master.winfo_children():
+            if isinstance(window, tk.Toplevel) and window != self.top:
+                window.destroy()
+        self.top.destroy()  # Ensure the current task window is closed
 
     def remove_task(self):
         selected_index = self.task_list.curselection()
@@ -370,7 +419,7 @@ class TaskWindow:
             del self.calendar_app.tasks[self.date_key][task_index]
             self.calendar_app.save_tasks()
             self.load_tasks()
-            self.calendar_app.show_calendar(self.year, self.month)
+            self.calendar_app.show_calendar(self.calendar_app.current_year, self.calendar_app.current_month)
 
 # Initialize the Tkinter app
 root = tk.Tk()
