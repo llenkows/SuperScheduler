@@ -126,48 +126,6 @@ class TaskCalendar:
     def open_task_window(self, year, month, day):
         TaskWindow(self.root, year, month, day, self)
 
-    def add_task(self, year, month, day):
-        date_key = f"{year}-{month:02d}-{day:02d}"
-        task_name = simpledialog.askstring("Task Name", "Enter the name of the task:")
-        if not task_name:
-            return
-
-        category = simpledialog.askstring("Task Category", "Enter the task category:")
-        if not category:
-            messagebox.showerror("Error", "Category cannot be empty!")
-            return
-
-        # Open a new window to select the status
-        status_window = tk.Toplevel(self.root)
-        status_window.title("Select Task Status")
-        status_window.geometry("300x150")
-
-        status = tk.StringVar(value="")
-
-        tk.Label(status_window, text="Select the task status:", font=("Arial", 12)).pack(pady=10)
-
-        # Create buttons for status selection
-        tk.Button(status_window, text="Unfinished", command=lambda: self.set_status(status, "Unfinished", status_window)).pack(pady=5, fill=tk.X)
-        tk.Button(status_window, text="Work in Progress", command=lambda: self.set_status(status, "Work in Progress", status_window)).pack(pady=5, fill=tk.X)
-        tk.Button(status_window, text="Complete", command=lambda: self.set_status(status, "Complete", status_window)).pack(pady=5, fill=tk.X)
-
-        self.root.wait_window(status_window)  # Wait for the status window to close
-
-        if not status.get():
-            messagebox.showerror("Error", "Status cannot be empty!")
-            return
-
-        if date_key not in self.tasks:
-            self.tasks[date_key] = []
-        self.tasks[date_key].append({"name": task_name, "category": category, "status": status.get()})
-        self.save_tasks()
-
-        self.show_calendar(self.current_year, self.current_month)
-
-    def set_status(self, status_var, status_value, window):
-        status_var.set(status_value)
-        window.destroy()
-
 class TaskWindow:
     def __init__(self, parent, year, month, day, calendar_app):
         self.top = tk.Toplevel(parent)
@@ -210,46 +168,101 @@ class TaskWindow:
             tasks = self.calendar_app.tasks[self.date_key]
             for index, task in enumerate(tasks):
                 if isinstance(task, dict):  # Ensure task is a dictionary
-                    task_info = f"{index + 1}. {task['name']} - {task['category']} - {task['status']}"
+                    task_info = f"{index + 1}. {task['name']} - {task['category']} - {task['status']} - Due: {task.get('due_time', 'No Time')}"
                     self.task_list.insert(tk.END, task_info)
 
     def add_task(self):
-        task_name = simpledialog.askstring("Task Name", "Enter the name of the task:")
-        if not task_name:
-            return
+        # Create a single window for task addition
+        add_task_window = tk.Toplevel(self.top)
+        add_task_window.title("Add Task")
+        add_task_window.geometry("400x400")  # Adjust the window size to fit all elements
 
-        category = simpledialog.askstring("Task Category", "Enter the task category:")
-        if not category:
-            messagebox.showerror("Error", "Category cannot be empty!")
-            return
+        # Task Name
+        tk.Label(add_task_window, text="Task Name:").pack(pady=5)
+        task_name_var = tk.StringVar()
+        task_name_entry = tk.Entry(add_task_window, textvariable=task_name_var)
+        task_name_entry.pack(pady=5)
 
-        # Open a new window to select the status
-        status_window = tk.Toplevel(self.top)
-        status_window.title("Select Task Status")
-        status_window.geometry("300x150")
+        # Task Category
+        tk.Label(add_task_window, text="Category:").pack(pady=5)
+        category_var = tk.StringVar()
+        category_entry = tk.Entry(add_task_window, textvariable=category_var)
+        category_entry.pack(pady=5)
 
-        status = tk.StringVar(value="")
+        # Time Input (Hour, Minute, AM/PM)
+        tk.Label(add_task_window, text="Select Time:").pack(pady=5)
 
-        tk.Label(status_window, text="Select the task status:", font=("Arial", 12)).pack(pady=10)
+        hour_var = tk.IntVar(value=12)
+        minute_var = tk.IntVar(value=0)
+        am_pm_var = tk.StringVar(value="AM")
 
-        # Create buttons for status selection
-        tk.Button(status_window, text="Unfinished", command=lambda: self.set_status(status, "Unfinished", status_window)).pack(pady=5, fill=tk.X)
-        tk.Button(status_window, text="Work in Progress", command=lambda: self.set_status(status, "Work in Progress", status_window)).pack(pady=5, fill=tk.X)
-        tk.Button(status_window, text="Complete", command=lambda: self.set_status(status, "Complete", status_window)).pack(pady=5, fill=tk.X)
+        time_frame = tk.Frame(add_task_window)
+        time_frame.pack(pady=5)
 
-        self.top.wait_window(status_window)  # Wait for the status window to close
+        tk.Label(time_frame, text="Hour (1-12):").pack(side=tk.LEFT, padx=5)
+        hour_spinbox = tk.Spinbox(time_frame, from_=1, to=12, textvariable=hour_var, width=5)
+        hour_spinbox.pack(side=tk.LEFT, padx=5)
 
-        if not status.get():
-            messagebox.showerror("Error", "Status cannot be empty!")
-            return
+        tk.Label(time_frame, text="Minute (0-59):").pack(side=tk.LEFT, padx=5)
+        minute_spinbox = tk.Spinbox(time_frame, from_=0, to=59, textvariable=minute_var, width=5)
+        minute_spinbox.pack(side=tk.LEFT, padx=5)
 
-        new_task = {"name": task_name, "category": category, "status": status.get()}
-        if self.date_key not in self.calendar_app.tasks:
-            self.calendar_app.tasks[self.date_key] = []  # Initialize as an empty list
+        am_pm_frame = tk.Frame(add_task_window)
+        am_pm_frame.pack(pady=5)
+        tk.Radiobutton(am_pm_frame, text="AM", variable=am_pm_var, value="AM").pack(side=tk.LEFT, padx=5)
+        tk.Radiobutton(am_pm_frame, text="PM", variable=am_pm_var, value="PM").pack(side=tk.LEFT, padx=5)
 
-        self.calendar_app.tasks[self.date_key].append(new_task)
-        self.calendar_app.save_tasks()
-        self.load_tasks()
+        # Task Status Selection
+        tk.Label(add_task_window, text="Task Status:").pack(pady=10)
+
+        status_var = tk.StringVar(value="Unfinished")
+
+        status_frame = tk.Frame(add_task_window)
+        status_frame.pack(pady=5)
+        tk.Radiobutton(status_frame, text="Unfinished", variable=status_var, value="Unfinished").pack(anchor=tk.W)
+        tk.Radiobutton(status_frame, text="Work in Progress", variable=status_var, value="Work in Progress").pack(
+            anchor=tk.W)
+        tk.Radiobutton(status_frame, text="Completed", variable=status_var, value="Completed").pack(anchor=tk.W)
+
+        # Confirm Button
+        def confirm_add_task():
+            task_name = task_name_var.get()
+            category = category_var.get()
+            status = status_var.get()
+
+            if not task_name or not category:
+                messagebox.showerror("Error", "Task name and category cannot be empty!")
+                return
+
+            hour = hour_var.get()
+            minute = minute_var.get()
+            am_pm = am_pm_var.get()
+
+            if am_pm == "PM" and hour != 12:
+                hour += 12
+            elif am_pm == "AM" and hour == 12:
+                hour = 0
+
+            due_time = f"{hour % 12 or 12}:{minute:02d} {am_pm}"
+
+            new_task = {
+                "name": task_name,
+                "category": category,
+                "status": status,  # Include the selected task status
+                "due_time": due_time
+            }
+
+            if self.date_key not in self.calendar_app.tasks:
+                self.calendar_app.tasks[self.date_key] = []
+
+            self.calendar_app.tasks[self.date_key].append(new_task)
+            self.calendar_app.save_tasks()
+            self.load_tasks()
+            self.calendar_app.show_calendar(self.year, self.month)
+            add_task_window.destroy()
+
+        confirm_button = tk.Button(add_task_window, text="Add Task", command=confirm_add_task)
+        confirm_button.pack(pady=20)
 
     def set_status(self, status_var, status_value, window):
         status_var.set(status_value)
@@ -258,36 +271,33 @@ class TaskWindow:
     def remove_task(self):
         selected_index = self.task_list.curselection()
         if not selected_index:
-            messagebox.showerror("Error", "No task selected!")
+            messagebox.showwarning("No Selection", "Please select a task to remove.")
             return
 
         task_index = selected_index[0]
-
-        if messagebox.askyesno("Confirm Deletion", "Are you sure you want to remove this task?"):
+        if messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this task?"):
             del self.calendar_app.tasks[self.date_key][task_index]
-            if not self.calendar_app.tasks[self.date_key]:
-                del self.calendar_app.tasks[self.date_key]
             self.calendar_app.save_tasks()
             self.load_tasks()
+            self.calendar_app.show_calendar(self.year, self.month)
 
     def update_task_status(self):
         selected_index = self.task_list.curselection()
         if not selected_index:
-            messagebox.showerror("Error", "No task selected!")
+            messagebox.showwarning("No Selection", "Please select a task to update.")
             return
 
         task_index = selected_index[0]
 
         # Open a new window to select the new status
         status_window = tk.Toplevel(self.top)
-        status_window.title("Select New Task Status")
+        status_window.title("Update Task Status")
         status_window.geometry("300x150")
 
         status = tk.StringVar(value="")
 
-        tk.Label(status_window, text="Select the new status:", font=("Arial", 12)).pack(pady=10)
+        tk.Label(status_window, text="Select the new task status:", font=("Arial", 12)).pack(pady=10)
 
-        # Create buttons for status selection
         tk.Button(status_window, text="Unfinished", command=lambda: self.set_status(status, "Unfinished", status_window)).pack(pady=5, fill=tk.X)
         tk.Button(status_window, text="Work in Progress", command=lambda: self.set_status(status, "Work in Progress", status_window)).pack(pady=5, fill=tk.X)
         tk.Button(status_window, text="Complete", command=lambda: self.set_status(status, "Complete", status_window)).pack(pady=5, fill=tk.X)
@@ -301,8 +311,9 @@ class TaskWindow:
         self.calendar_app.tasks[self.date_key][task_index]['status'] = status.get()
         self.calendar_app.save_tasks()
         self.load_tasks()
+        self.calendar_app.show_calendar(self.year, self.month)
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = TaskCalendar(root)
-    root.mainloop()
+# Initialize the Tkinter app
+root = tk.Tk()
+app = TaskCalendar(root)
+root.mainloop()
