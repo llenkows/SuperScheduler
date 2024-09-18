@@ -3,11 +3,18 @@
         {
             "name": "Test",
             "category": "Testing",
-            "status": "Unfinished",
+            "status": "Work in Progress",
             "due_time": "11:30 PM"
         }
     ],
-    "2024-09-20": [],
+    "2024-09-20": [
+        {
+            "name": "test",
+            "category": "test",
+            "status": "In Progress",
+            "due_time": "12:00 AM"
+        }
+    ],
     "2024-09-19": [
         {
             "name": "Test2",
@@ -15,5 +22,7 @@
             "status": "Work in Progress",
             "due_time": "11:59 PM"
         }
-    ]
+    ],
+    "2024-09-21": [],
+    "2024-09-17": []
 }
