@@ -6,6 +6,7 @@ from task_window import TaskWindow
 from pystray import Icon, MenuItem as item
 from PIL import Image
 
+
 # File to store tasks
 TASKS_FILE = 'tasks.json'
 
