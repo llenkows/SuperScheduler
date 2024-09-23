@@ -1,7 +1,7 @@
 import os
 import json
 import calendar
-from datetime import datetime
+from datetime import datetime, timedelta
 import tkinter as tk
 from task_window import TaskWindow
 
@@ -20,6 +20,9 @@ class TaskCalendar:
 
         self.current_year = datetime.now().year
         self.current_month = datetime.now().month
+
+        # Store button references in a dictionary
+        self.date_buttons = {}
 
         # Create a frame for navigation and label
         self.nav_frame = tk.Frame(self.root)
@@ -60,6 +63,9 @@ class TaskCalendar:
         for widget in self.calendar_frame.winfo_children():
             widget.destroy()
 
+        # Clear the date_buttons dictionary
+        self.date_buttons.clear()
+
         # Update the label with the current month and year
         self.label.config(text=f"{calendar.month_name[month]} {year}")
 
@@ -97,6 +103,9 @@ class TaskCalendar:
             )
             day_button.grid(row=row, column=col, sticky="nsew", padx=5, pady=5)
 
+            # Store the button in the date_buttons dictionary
+            self.date_buttons[date_key] = day_button
+
             col += 1
             if col > 6:
                 col = 0
@@ -105,6 +114,9 @@ class TaskCalendar:
         # Adjust the grid row configuration so that rows grow proportionally with window resizing
         for i in range(row + 1):
             self.calendar_frame.grid_rowconfigure(i, weight=1, uniform="day")
+
+        # Update the colors of the date boxes based on task due dates
+        self.update_date_boxes()
 
     def prev_month(self):
         if self.current_month == 1:
@@ -122,5 +134,31 @@ class TaskCalendar:
             self.current_month += 1
         self.show_calendar(self.current_year, self.current_month)
 
+    def get_date_button(self, date_key):
+        """Retrieve the button associated with a specific date."""
+        return self.date_buttons.get(date_key)
+
+    def update_date_boxes(self):
+        """Update calendar date boxes based on the proximity of tasks' due dates."""
+        today = datetime.today().date()
+
+        for date_key, tasks in self.tasks.items():
+            task_date = datetime.strptime(date_key, "%Y-%m-%d").date()
+
+            # Find the corresponding button for the date
+            date_button = self.get_date_button(date_key)
+
+            if date_button:
+                # Set colors based on how far the task is
+                if task_date == today:
+                    date_button.config(bg="orange")  # Task due today
+                elif task_date == today + timedelta(days=1):
+                    date_button.config(bg="yellow")  # Task due tomorrow
+                elif task_date < today:
+                    date_button.config(bg="red")  # Task past due
+                else:
+                    date_button.config(bg="lightgrey")  # No special color if it's beyond tomorrow
+
     def open_task_window(self, year, month, day):
         TaskWindow(self.root, year, month, day, self)
+
