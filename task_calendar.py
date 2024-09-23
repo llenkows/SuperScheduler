@@ -1,12 +1,15 @@
-import os
-import json
-import calendar
+import os, json, calendar, threading
 from datetime import datetime, timedelta
 import tkinter as tk
+from tkinter import messagebox
 from task_window import TaskWindow
+from pystray import Icon, MenuItem as item
+from PIL import Image
 
 # File to store tasks
 TASKS_FILE = 'tasks.json'
+
+
 class TaskCalendar:
     def __init__(self, root):
         self.root = root
@@ -46,6 +49,13 @@ class TaskCalendar:
             self.calendar_frame.grid_columnconfigure(i, weight=1, uniform="day")
         self.root.grid_rowconfigure(1, weight=1)  # Make the calendar area expandable
 
+        self.show_calendar(self.current_year, self.current_month)
+
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def reset_application(self):
+        """Reset the application state and reload everything."""
+        self.tasks = self.load_tasks()
         self.show_calendar(self.current_year, self.current_month)
 
     def load_tasks(self):
@@ -162,3 +172,34 @@ class TaskCalendar:
     def open_task_window(self, year, month, day):
         TaskWindow(self.root, year, month, day, self)
 
+    def on_closing(self):
+        response = messagebox.askyesnocancel("Exit", "Do you want to run the program in the background?")
+        if response is None:  # User canceled
+            return
+        elif response:  # Yes - run in background
+            self.root.withdraw()  # Hide the main window
+            self.create_tray_icon()  # Start the tray icon
+        else:  # No - close completely
+            self.root.quit()
+
+    def create_tray_icon(self):
+        icon_image = Image.open("icon.png")
+        menu = (item('Restore', self.restore), item('Exit', self.root.quit))
+        tray_icon = Icon("SuperScheduler", icon_image, menu=menu)
+
+        # Run the icon in a separate thread
+        threading.Thread(target=tray_icon.run, args=(self.setup_tray,), daemon=True).start()
+
+    def setup_tray(self, icon):
+        icon.visible = True  # Make sure the icon is visible
+
+    def restore(self):
+        self.root.deiconify()  # Show the main window again
+        self.root.lift()  # Bring the window to the front
+        self.root.focus_force()  # Force focus on the window
+
+        # Ensure the close protocol is set again
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        # Reset and reload everything
+        self.reset_application()
