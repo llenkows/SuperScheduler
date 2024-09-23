@@ -23,6 +23,61 @@
             "due_time": "11:59 PM"
         }
     ],
-    "2024-09-21": [],
-    "2024-09-17": []
+    "2024-09-21": [
+        {
+            "name": "Friday!",
+            "category": "Hooray",
+            "status": "Unfinished",
+            "due_time": "9:07 PM"
+        }
+    ],
+    "2024-09-17": [],
+    "2024-09-28": [
+        {
+            "name": "Friday!",
+            "category": "Hooray",
+            "status": "Unfinished",
+            "due_time": "9:07 PM"
+        }
+    ],
+    "2024-10-05": [
+        {
+            "name": "Friday!",
+            "category": "Hooray",
+            "status": "Unfinished",
+            "due_time": "9:07 PM"
+        }
+    ],
+    "2024-09-24": [
+        {
+            "name": "retest",
+            "category": "restest",
+            "status": "Unfinished",
+            "due_time": "10:00 AM"
+        }
+    ],
+    "2024-09-25": [
+        {
+            "name": "retest",
+            "category": "restest",
+            "status": "Unfinished",
+            "due_time": "10:00 AM"
+        }
+    ],
+    "2024-09-26": [
+        {
+            "name": "retest",
+            "category": "restest",
+            "status": "Unfinished",
+            "due_time": "10:00 AM"
+        }
+    ],
+    "2024-09-27": [
+        {
+            "name": "retest",
+            "category": "restest",
+            "status": "Unfinished",
+            "due_time": "10:00 AM"
+        }
+    ]
 }

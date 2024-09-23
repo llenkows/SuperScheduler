@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+from datetime import datetime, timedelta
 
 # File to store tasks
 TASKS_FILE = 'tasks.json'
@@ -32,6 +33,9 @@ class TaskWindow:
 
         # Create buttons for adding, editing, and removing tasks
         self.add_button = tk.Button(self.top, text="Add Task", command=self.add_task)
+        self.add_button.pack(side=tk.LEFT, padx=10, pady=5)
+
+        self.add_button = tk.Button(self.top, text="Add Recurring Task", command=self.add_recurring_tasks)
         self.add_button.pack(side=tk.LEFT, padx=10, pady=5)
 
         self.edit_button = tk.Button(self.top, text="Edit Task", command=self.edit_task)
@@ -146,6 +150,165 @@ class TaskWindow:
 
         confirm_button = tk.Button(add_task_window, text="Add Task", command=confirm_add_task)
         confirm_button.pack(pady=20)
+
+    def add_recurring_tasks(self):
+        # Create a window for recurring task addition
+        recurring_task_window = tk.Toplevel(self.top)
+        recurring_task_window.title("Add Recurring Task")
+
+        # Adjust size
+        recurring_task_window.geometry("500x600")
+        recurring_task_window.minsize(400, 500)
+
+        # Task Name
+        tk.Label(recurring_task_window, text="Task Name:").pack(pady=5)
+        task_name_var = tk.StringVar()
+        task_name_entry = tk.Entry(recurring_task_window, textvariable=task_name_var)
+        task_name_entry.pack(pady=5)
+
+        # Task Category
+        tk.Label(recurring_task_window, text="Category:").pack(pady=5)
+        category_var = tk.StringVar()
+        category_entry = tk.Entry(recurring_task_window, textvariable=category_var)
+        category_entry.pack(pady=5)
+
+        # Time Input (Hour, Minute, AM/PM)
+        tk.Label(recurring_task_window, text="Select Time:").pack(pady=5)
+
+        hour_var = tk.IntVar(value=12)
+        minute_var = tk.IntVar(value=0)
+        am_pm_var = tk.StringVar(value="AM")
+
+        time_frame = tk.Frame(recurring_task_window)
+        time_frame.pack(pady=5)
+
+        tk.Label(time_frame, text="Hour (1-12):").pack(side=tk.LEFT, padx=5)
+        hour_spinbox = tk.Spinbox(time_frame, from_=1, to=12, textvariable=hour_var, width=5)
+        hour_spinbox.pack(side=tk.LEFT, padx=5)
+
+        tk.Label(time_frame, text="Minute (0-59):").pack(side=tk.LEFT, padx=5)
+        minute_spinbox = tk.Spinbox(time_frame, from_=0, to=59, textvariable=minute_var, width=5)
+        minute_spinbox.pack(side=tk.LEFT, padx=5)
+
+        am_pm_frame = tk.Frame(recurring_task_window)
+        am_pm_frame.pack(pady=5)
+        tk.Radiobutton(am_pm_frame, text="AM", variable=am_pm_var, value="AM").pack(side=tk.LEFT, padx=5)
+        tk.Radiobutton(am_pm_frame, text="PM", variable=am_pm_var, value="PM").pack(side=tk.LEFT, padx=5)
+
+        # Recurrence Options
+        tk.Label(recurring_task_window, text="Recurrence:").pack(pady=10)
+
+        recurrence_var = tk.StringVar(value="Daily")
+        recurrence_options = ["Daily", "Every Other Day", "Weekly", "Every Other Week", "Monthly"]
+
+        recurrence_menu = tk.OptionMenu(recurring_task_window, recurrence_var, *recurrence_options)
+        recurrence_menu.pack(pady=5)
+
+        # End Date for Recurrence
+        tk.Label(recurring_task_window, text="End Date (YYYY-MM-DD):").pack(pady=5)
+        end_date_var = tk.StringVar()
+        end_date_entry = tk.Entry(recurring_task_window, textvariable=end_date_var)
+        end_date_entry.pack(pady=5)
+
+        # Task Status Selection
+        tk.Label(recurring_task_window, text="Task Status:").pack(pady=10)
+
+        status_var = tk.StringVar(value="Unfinished")
+
+        status_frame = tk.Frame(recurring_task_window)
+        status_frame.pack(pady=5)
+        tk.Radiobutton(status_frame, text="Unfinished", variable=status_var, value="Unfinished").pack(anchor=tk.W)
+        tk.Radiobutton(status_frame, text="Work in Progress", variable=status_var, value="Work in Progress").pack(anchor=tk.W)
+        tk.Radiobutton(status_frame, text="Completed", variable=status_var, value="Completed").pack(anchor=tk.W)
+
+        # Confirm Button
+        def confirm_add_recurring_tasks():
+            task_name = task_name_var.get()
+            category = category_var.get()
+            status = status_var.get()
+            recurrence = recurrence_var.get()
+            end_date_str = end_date_var.get()
+
+            # Validate input
+            if not task_name or not category:
+                messagebox.showerror("Error", "Task name and category cannot be empty!")
+                return
+
+            try:
+                # Convert end_date string to date object
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            except ValueError:
+                messagebox.showerror("Error", "Invalid end date format! Use YYYY-MM-DD.")
+                return
+
+            hour = hour_var.get()
+            minute = minute_var.get()
+            am_pm = am_pm_var.get()
+
+            if am_pm == "PM" and hour != 12:
+                hour += 12
+            elif am_pm == "AM" and hour == 12:
+                hour = 0
+
+            due_time = f"{hour % 12 or 12}:{minute:02d} {am_pm}"
+
+            # Convert start_date to date object (assuming self.date_key is a string)
+            try:
+                start_date = datetime.strptime(self.date_key, "%Y-%m-%d").date()  # Adjust this format if needed
+            except ValueError:
+                messagebox.showerror("Error", "Invalid start date format!")
+                return
+
+            # Calculate recurring dates
+            recurrence_dates = self.get_recurrence_dates(start_date, end_date, recurrence)
+
+            # Add tasks for all recurring dates
+            for date in recurrence_dates:
+                new_task = {
+                    "name": task_name,
+                    "category": category,
+                    "status": status,
+                    "due_time": due_time
+                }
+
+                # Ensure the date exists in the task dictionary
+                date_key = date.strftime("%Y-%m-%d")
+                if date_key not in self.calendar_app.tasks:
+                    self.calendar_app.tasks[date_key] = []
+                self.calendar_app.tasks[date_key].append(new_task)
+
+            # Call the save function to persist changes
+            self.calendar_app.save_tasks()
+            self.load_tasks()
+            self.calendar_app.show_calendar(self.calendar_app.current_year, self.calendar_app.current_month)
+            recurring_task_window.destroy()
+
+        confirm_button=tk.Button(recurring_task_window, text="Add Task", command=confirm_add_recurring_tasks)
+        confirm_button.pack(pady=20)
+
+    def get_recurrence_dates(self, start_date, end_date, recurrence):
+        """Generate a list of dates for the recurring task based on the recurrence pattern."""
+        dates = []
+        current_date = start_date
+
+        while current_date <= end_date:
+            dates.append(current_date)
+
+            if recurrence == "Daily":
+                current_date += timedelta(days=1)
+            elif recurrence == "Every Other Day":
+                current_date += timedelta(days=2)
+            elif recurrence == "Weekly":
+                current_date += timedelta(weeks=1)
+            elif recurrence == "Every Other Week":
+                current_date += timedelta(weeks=2)
+            elif recurrence == "Monthly":
+                # Handle month changes
+                next_month = current_date.month % 12 + 1
+                year_adjust = current_date.year + (1 if next_month == 1 else 0)
+                current_date = current_date.replace(year=year_adjust, month=next_month)
+
+        return dates
 
     def edit_task(self):
         selected_index = self.task_list.curselection()
